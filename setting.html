@@ -1,0 +1,456 @@
+
+<html>
+  
+  <head>
+
+  <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <meta charset="utf-8" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" type="text/css" href="/style.css">
+  <body>
+
+      <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid container">
+          <a class="navbar-brand" onclick="setting()">
+
+              <div id="upload">
+              </div>
+              <div id="loadings" >
+      </div>
+            <div id="avatar_username">
+            </div>
+          </a>
+
+        </div>
+    </nav>
+
+    </body>
+
+  </head>
+
+<script>
+var upload = document.getElementById("upload");
+
+  var able = true
+var userData;
+var error;
+fetch(('/api/v1/users/@me') , {method: 'GET', headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+  let json = await res.json();
+if(json.errors && json.errors.length > 0 && json.errors.includes("authorization")){
+localStorage.clear()
+loginHTML()
+}else{
+userData = json
+home()
+}
+
+                            
+})
+  
+function loginHTML(){
+
+let html = document.querySelector("HTML");
+html.innerHTML = `
+
+    <link rel="stylesheet" type="text/css" href="/style.css">
+<div class="view" id="loading"></div>
+    <div class="head-div field">
+    <br><br>
+      <input id="email" type="textarea" class="input-form" placeholder="" name="Email" required>
+      <label for="name" class="label-form">Type Your Email</label>
+      <br><br>
+    <div class="head-div field">
+      <br>
+            <i class="far fa-eye" id="test3"></i>
+      <input id="password" type="password" maxlength="15" class="input-form" placeholder="" name="Password" required>
+      <label for="name" class="label-form">Type Your Paasword</label>
+   </div>  
+      <br>
+
+      <br><br>
+      <button class="button button1" id="login" onclick="login()">    
+        Login
+    </button>        <br><br>
+      <button class="button button2" id="login" onclick="registerHTML()">    
+        You Don't have Account?
+    </button>
+
+`
+}
+  
+function registerHTML(){
+
+let html = document.querySelector("HTML");
+html.innerHTML = `
+
+    <link rel="stylesheet" type="text/css" href="/style.css">
+<div class="view" id="loading"></div>
+    <div class="head-div field">
+    <br><br>
+      <input id="email" type="textarea" class="input-form" placeholder="" name="Email" required>
+      <label for="name" class="label-form">Type Your Email</label>
+      <br><br>
+    <div class="head-div field">
+      <br><br>
+      <input id="username" type="textarea" class="input-form" placeholder="" name="Username" required>
+      <label for="name" class="label-form">Type Your Username</label>
+      <br><br>
+    <div class="head-div field">
+      <br><br>
+            <i class="far fa-eye" id="test3"></i>
+      <input id="password" type="password" maxlength="15" class="input-form" placeholder="" name="Password" required>
+      <label for="name" class="label-form">Type Your Paasword</label>
+      <br><br>
+   </div>  
+      <br>
+
+      <br><br>
+      <button class="button button1" id="register" onclick="register()">    
+        Register
+    </button>        <br><br>
+      <button class="button button2" id="login" onclick="loginHTML()">    
+        Already Have Account?
+    </button>
+
+`
+}
+function register(){
+      var username = document.getElementById("username").value;
+
+      var email = document.getElementById("email").value;
+      var password = document.getElementById("password").value;
+
+if(!email || !password || !username) return;
+var error = ``
+var able = true
+fetch(('/api/v1/register') , {method: 'POST',body: JSON.stringify({"username": username, "email": email, "password": password}), headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+  let json = await res.json();
+if(json.errors.includes('authorization')) return alert(json.message)
+if(json.token) localStorage.setItem('token', json.token);
+if(!json.token) return alert(json.message)
+if(json.token) home()
+
+})
+}
+
+
+
+
+function login(){
+      var email = document.getElementById("email").value;
+      var password = document.getElementById("password").value;
+
+if(!email || !password) return;
+var error = ``
+var able = true
+fetch(('/api/v1/login') , {method: 'POST',body: JSON.stringify({"email": email, "password": password}), headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+  let json = await res.json();
+if(json.errors.includes('authorization')) return alert(json.message)
+if(json.data && json.data.token) localStorage.setItem('token', json.data.token);
+if(!json.data || !json.data.token) return alert(json.message)
+home()
+})
+}
+
+function home(){
+  upload.innerHTML = ``
+let html = document.querySelector("HTML");
+html.innerHTML = `
+    <link rel="stylesheet" type="text/css" href="/style.css">
+<body>
+
+<div> <button class="buttonsetting buttonsetting1" onclick="setting_password()">Edit Password</button>
+<button class="buttonsetting buttonsetting2" onclick="setting_email()">Edit Email</button> 
+<button class="buttonsetting buttonsetting3" onclick="setting_username()">Edit Username</button>
+<button class="buttonsetting buttonsetting3" onclick="setting_avatar()">Edit Avatar</button>
+ </div>
+
+  </body>
+
+`
+}
+function edit_password(){
+      var status = document.getElementById("status");
+
+
+      var oldpassword = document.getElementById("oldpassword").value;
+      var password = document.getElementById("password").value;
+if(!oldpassword || !password) return;
+  var able = true
+var error;
+fetch(('/api/v1/users/@me') , {method: 'PATCH' , body: JSON.stringify({password: oldpassword, new_password: password}), headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+  let json = await res.json();
+if(json.message) {
+if(json.message === "Failed Authorization") loginHTML()
+
+status.innerHTML = `<div class="w3-panel w3-red">
+  <h3>Error!</h3>
+  <p>${json.message}</p>
+</div>`
+}else{
+localStorage.setItem('token', json.token);
+status.innerHTML = `<div class="w3-panel w3-pale-green w3-border">
+  <h3>Success!</h3>
+<div> <button class="buttonsetting buttonsetting1" onclick="home()">Home</button> </dvi>
+</div>`
+}
+})
+}
+
+function setting_password(){
+
+let html = document.querySelector("HTML");
+html.innerHTML = `
+    <link rel="stylesheet" type="text/css" href="/style.css">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+
+<body>
+<div id="status"></div>
+
+  <div class="containers">
+
+
+  <div class="containers" style="background-color:white">
+    <input id="oldpassword" type="text" style="color:000000" placeholder="Old Password" name="oldpassword" required>
+    <input id="password" type="text" style="color:000000" placeholder="Password" name="newpassword" required>
+
+    <label>
+
+  </div>
+
+  <div class="containers">
+    <input type="submit" onclick="edit_password()" value="Save">
+    <input type="submit" onclick="home()" value="Home">
+  </div>
+
+</body>`
+}
+function edit_username(){
+      var status = document.getElementById("status");
+
+      var username = document.getElementById("username").value;
+      var password = document.getElementById("password").value;
+if(!password || !username) return;
+  var able = true
+var error;
+fetch(('/api/v1/users/@me') , {method: 'PATCH' , body: JSON.stringify({username: username, new_password: password}), headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+  let json = await res.json();
+if(json.message) {
+if(json.message === "Failed Authorization") loginHTML()
+status.innerHTML = `<div class="w3-panel w3-red">
+  <h3>Error!</h3>
+  <p>${json.message}</p>
+</div>`
+}else{
+localStorage.setItem('token', json.token);
+status.innerHTML = `<div class="w3-panel w3-pale-green w3-border">
+  <h3>Success!</h3>
+<div> <button class="buttonsetting buttonsetting1" onclick="home()">Home</button> </dvi>
+</div>`
+}
+})
+}
+
+function edit_email(){
+      var status = document.getElementById("status");
+
+
+      var email = document.getElementById("email").value;
+      var password = document.getElementById("password").value;
+if(!password || !email) return;
+  var able = true
+var error;
+fetch(('/api/v1/users/@me') , {method: 'PATCH' , body: JSON.stringify({email: email, new_password: password}), headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+  let json = await res.json();
+if(json.message) {
+if(json.message === "Failed Authorization") loginHTML()
+status.innerHTML = `<div class="w3-panel w3-red">
+  <h3>Error!</h3>
+  <p>${json.message}</p>
+</div>`
+}else{
+localStorage.setItem('token', json.token);
+status.innerHTML = `<div class="w3-panel w3-pale-green w3-border">
+  <h3>Success!</h3>
+<div> <button class="buttonsetting buttonsetting1" onclick="home()">Home</button> </dvi>
+</div>`
+}
+})
+}
+
+
+function setting_email(){
+
+let html = document.querySelector("HTML");
+html.innerHTML = `
+    <link rel="stylesheet" type="text/css" href="/style.css">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+
+<body>
+<div id="status"></div>
+
+  <div class="containers">
+
+
+  <div class="containers" style="background-color:white">
+    <input id="email" type="text" style="color:000000" placeholder="Email" name="email" required>
+    <input id="password" type="text" style="color:000000" placeholder="Password" name="password" required>
+
+    <label>
+
+  </div>
+
+  <div class="containers">
+    <input type="submit" onclick="edit_email()" value="Save">
+    <input type="submit" onclick="home()" value="Home">
+
+  </div>
+
+</body>`
+}
+const toBase64 = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+});
+let websocket = new WebSocket("wss://tiktok-developer.glitch.me/gateway/chat");
+
+   websocket.onclose = function(evt) {
+
+   }
+
+    websocket.onmessage = function(evt) {
+let data;
+try { data = JSON.parse(evt.data) } catch (e) {}
+if(!data) return;
+if(data.d === "login" && data.message === "Request Authorization"){
+websocket.send(JSON.stringify({token: userData.token})) 
+
+    }
+    }
+function setting_avatar(){
+
+let html = document.querySelector("HTML");
+html.innerHTML = `    <meta charset="utf-8" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet">
+<div> <button class="buttonsetting buttonsetting1" onclick="home()">Home</button> </div>
+    <link rel="stylesheet" type="text/css" href="/style.css">
+  <body>
+<div id="upload">
+ </div>
+<div id="loadings">
+ </div>
+  </body>
+`
+ upload = document.getElementById("upload"); 
+
+upload.innerHTML = `<br><br> <input id="upload1"> <br><br>`
+var loading = document.getElementById("loadings"); 
+
+var settingsPhotoInput = document.getElementById("upload1");
+console.log(settingsPhotoInput)
+settingsPhotoInput.type = "file"
+settingsPhotoInput.id = "profile_avatar"
+settingsPhotoInput.setAttribute("accept" , ".jpg, .jpeg, .png, .gif")
+settingsPhotoInput.addEventListener("change", async function(event) {
+var files = settingsPhotoInput.files;
+if(!files[0]) return;
+let file = files[0]
+if(!file) return;
+let image_base64 = await toBase64(file)
+if(!image_base64) return;
+loading.innerHTML = `
+      <img src=${image_base64}
+        //8/w38GIAXDIBKE0DHxgljNBAAO9TXL0Y4OHwAAAABJRU5ErkJggg==" alt="Red dot" />
+    </div>
+<div class="loader"> </div>
+`
+
+  var able = true
+var error;
+
+fetch(('/api/v1/users/@me') , {method: 'PATCH' , body: JSON.stringify({avatar: image_base64}), headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+  let json = await res.json();
+if(json.message) {
+if(json.message === "Failed Authorization") loginHTML()
+alert(json.message)
+ upload = document.getElementById("upload"); 
+
+loading.innerHTML = ``
+
+}else{
+ upload = document.getElementById("upload"); 
+
+localStorage.setItem('token', json.token);
+loading.innerHTML = ``
+
+}
+})
+})
+
+
+}
+function setting_username(){
+console.log(window.location.pathname) 
+
+let html = document.querySelector("HTML");
+html.innerHTML = `
+    <link rel="stylesheet" type="text/css" href="/style.css">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+
+<body>
+<div id="status"></div>
+
+  <div class="containers">
+
+
+  <div class="containers" style="background-color:white">
+    <input id="username" type="text" style="color:000000" placeholder="Username" name="username" required>
+    <input id="password" type="text" style="color:000000" placeholder="Password" name="password" required>
+
+    <label>
+
+  </div>
+
+  <div class="containers">
+    <input type="submit" onclick="edit_username()" value="Save">
+    <input type="submit" onclick="home()" value="Home">
+
+  </div>
+
+</body>`
+}
+
+
+</script>
+</html>

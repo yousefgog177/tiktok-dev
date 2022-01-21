@@ -1,0 +1,479 @@
+<html>
+
+  <head>
+  <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <meta charset="utf-8" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" type="text/css" href="/style.css">
+  <body>
+              <div id="profile">
+
+              </div>
+    <div class="head-div field" id="success-login">
+
+    </div>
+    </body>
+<div id="profile">
+
+    </div>
+              <div id="upload">
+              </div>
+
+  </head>
+
+<script>
+let messages = []
+var channel = ""
+var userData = {}
+var able = true
+var me = ``
+var error = ``
+let websocket = new WebSocket("wss://tiktok-developer.glitch.me/gateway/chat");
+
+  
+fetch(('/api/v1/users/@me') , {method: 'GET', headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+  let json = await res.json();
+if(json.errors && json.errors.length > 0 && json.errors.includes("authorization")){
+localStorage.clear()
+loginHTML()
+}else{
+
+   websocket.onclose = function(evt) { 
+
+    swal('Websocket', 'Error To Connect For websocket', 'error') 
+   }
+swal('Welcome To Chat!', `You ID ${json.id}!`, 'info')
+userData = json
+chat()
+}
+})
+    websocket.onmessage = function(evt) {
+var userid = document.getElementById("userid").value;
+
+let data;
+try { data = JSON.parse(evt.data) } catch (e) {}
+if(!data) return;
+if(data.d === "login" && data.message === "Request Authorization"){
+websocket.send(JSON.stringify({token: userData.token})) 
+}
+if(data.d === "createMessage" && data.channel === channel){
+var chat = document.getElementById("allchat");
+var messages2 = []
+delete data.message 
+delete data.errors
+delete data.d
+if(data.attachments.length < 1){
+data.attachment = false
+messages.unshift(data)
+}else{
+data.attachment = true
+messages.unshift(data)
+}
+var msgs = ``
+
+for(const data of messages) messages2.unshift(data)
+
+for(const data of messages2) {
+if(data.attachments.length < 1) msgs = msgs + `<img src="${data.authorData.avatar}" alt="" width="50" height="50" onclick="getuser(${data.authorData.id})" class="rounded-circle"> &nbsp; 
+                              <span class="user">${data.authorData.username}</span> <br> ${data.content} <br>`
+if(data.attachments.length > 0) msgs = msgs + `<img src="${data.authorData.avatar}" alt="" width="50" height="50" onclick="getuser(${data.authorData.id})" class="rounded-circle"> &nbsp; 
+                              <span class="user">${data.authorData.username}</span> <br> ${data.content} <br> <img id= "hi" style="width:300px; height:300;" src="${data.attachments[0]}"> <br>`
+}
+var objDiv = document.getElementById("allchat"); 
+objDiv.scrollTop = objDiv.scrollHeight;
+
+chat.innerHTML = `${msgs}`
+
+}
+
+    }
+function chat(){
+var success = document.getElementById("success-login");
+
+success.innerHTML = `
+
+    <br><br>
+      <input id="userid" type="textarea" class="input-form" placeholder="" name="ID User"/>
+      <label for="name" class="label-form">Type User ID</label>
+      <br><br>
+      <button class="button button2" onclick="getchat()">
+        Start
+    </button>
+      <br><br>
+      <div style="width:850px; height:420;" readonly class="chat" id="allchat">
+        </div>  
+    <br><br>
+    <div class="head-div field">
+      <input id="content" type="textarea" class="input-form" placeholder="" name="enter Content"/>
+      <label for="name" class="label-form">Type Content</label>
+      <br><br>
+      <button class="button button2" onclick="send()">
+        Send
+    </button>
+  </div>
+`
+}
+const toBase64 = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+});
+var uploads = document.getElementById("upload");
+uploads.innerHTML = `<br><br> <input id="upload1"> <br><br>`
+
+var upload = ""
+var settingsPhotoInput = document.getElementById("upload1");
+settingsPhotoInput.type = "file"
+settingsPhotoInput.id = "profile_avatar"
+settingsPhotoInput.setAttribute("accept" , ".jpg, .jpeg, .png, .gif, .webp, .mp4")
+settingsPhotoInput.addEventListener("change", async function(event) {
+var files = settingsPhotoInput.files;
+if(!files[0]) return;
+let file = files[0]
+if(!file) return;
+let image_base64 = await toBase64(file)
+if(!image_base64) return;
+upload = image_base64
+})
+function send(){
+var able = true
+var me = ``
+var error = ``
+var userid = document.getElementById("userid").value;
+var content = document.getElementById("content").value;
+if(!channel){
+fetch(('/api/v1/messages/channel/' + userid) , {method: 'get', headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async ress =>{
+var jsons = await ress.json()
+channel = jsons.channel
+if(jsons.message === "Unknown ChannelData"){
+fetch(('/api/v1/messages/channel/' + userid) , {method: 'post', headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async resa =>{
+ jsons = await resa.json()
+channel = jsons.channel
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+let allpic = upload
+if(allpic) allpic = [upload]
+if(!allpic) allpic = []
+fetch(('/api/v1/messages/' + channel) , {method: 'post', body: JSON.stringify({content: content, attachments: allpic}), headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+let json = await res.json()
+upload = ""
+
+
+})
+})
+}else{
+let allpic = upload
+if(allpic) allpic = [upload]
+if(!allpic) allpic = []
+fetch(('/api/v1/messages/' + jsons.channel) , {method: 'post', body: JSON.stringify({content: content, attachments: allpic}), headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+let json = await res.json()
+upload = ""
+
+
+})
+}
+})
+}else{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+let allpic = upload
+if(allpic) allpic = [upload]
+if(!allpic) allpic = []
+fetch(('/api/v1/messages/' + channel) , {method: 'post', body: JSON.stringify({content: content, attachments: allpic}), headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+let json = await res.json()
+upload = ""
+
+
+})
+}
+
+}
+
+function getchat(){
+var chat = document.getElementById("allchat");
+for(const d of messages) messages.shift(d)
+channel = ``
+chat.innerHTML = ``
+var userid = document.getElementById("userid").value;
+var able = true
+var me = ``
+var error = ``
+if(!channel){
+fetch(('/api/v1/messages/channel/' + userid) , {method: 'get', headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async ress =>{
+var jsons = await ress.json()
+channel = jsons.channel
+if(jsons.message === "Unknown ChannelData"){
+fetch(('/api/v1/messages/channel/' + userid) , {method: 'post', headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async resa =>{
+ jsons = await resa.json()
+channel = jsons.channel
+await new Promise((res , rej) =>{ setTimeout(() => res() , 1000)})
+fetch(('/api/v1/messages/limit/' + channel) , {method: 'GET', headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+let json = await res.json()
+var messages2 = []
+var msgs = ``
+for(const d of json.data) messages.unshift(d)
+for(const data of messages) messages2.unshift(data)
+
+for(const data of messages2) {
+if(data.attachments.length < 1) {
+msgs = msgs + `<img src="${data.authorData.avatar}" alt="" width="50" height="50" onclick="getuser(${data.authorData.id})" class="rounded-circle"> &nbsp; 
+                              <span class="user">${data.authorData.username}</span> <br> ${data.content} <br>`
+}else{
+msgs = msgs + `<img src="${data.authorData.avatar}" alt="" width="50" height="50" onclick="getuser(${data.authorData.id})" class="rounded-circle"> &nbsp; 
+                              <span class="user">${data.authorData.username}</span> <br> ${data.content} <br> <img id= "hi" style="width:300px; height:300;" src="${data.attachments[0]}"> <br>`
+}
+
+}
+
+chat.innerHTML = `${msgs}`
+})
+})
+}else{
+channel = jsons.channel
+await new Promise((res , rej) =>{ setTimeout(() => res() , 1000)})
+fetch(('/api/v1/messages/limit/' + channel) , {method: 'GET', headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+let json = await res.json()
+var messages2 = []
+var msgs = ``
+for(const d of json.data) messages.unshift(d)
+for(const data of messages) messages2.unshift(data)
+
+for(const data of messages2) {
+console.log(data)
+if(data.attachments.length < 1){
+msgs = msgs + `<img src="${data.authorData.avatar}" alt="" width="50" height="50" onclick="getuser(${data.authorData.id})" class="rounded-circle"> &nbsp; 
+                              <span class="user">${data.authorData.username}</span> <br> ${data.content} <br>`
+}else{
+msgs = msgs + `<img src="${data.authorData.avatar}" alt="" width="50" height="50" onclick="getuser(${data.authorData.id})" class="rounded-circle"> &nbsp; 
+                              <span class="user">${data.authorData.username}</span> <br> ${data.content} <br> <img id= "hi" style="width:300px; height:300;" src="${data.attachments[0]}"> <br>`
+}
+}
+chat.innerHTML = `${msgs}`
+})
+}
+
+})
+}else{
+fetch(('/api/v1/messages/limit/' + channel) , {method: 'GET', headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+let json = await res.json()
+var messages2 = []
+var msgs = ``
+for(const d of json.data) messages.unshift(d)
+for(const data of messages) messages2.unshift(data)
+
+for(const data of messages2) {
+if(data.attachments.length < 1){
+msgs = msgs + `<img src="${data.authorData.avatar}" alt="" width="50" height="50" onclick="getuser(${data.authorData.id})" class="rounded-circle"> &nbsp; 
+                              <span class="user">${data.authorData.username}</span> <br> ${data.content} <br>`
+}else{
+msgs = msgs + `<img src="${data.authorData.avatar}" alt="" width="50" height="50" onclick="getuser(${data.authorData.id})" class="rounded-circle"> &nbsp; 
+                              <span class="user">${data.authorData.username}</span> <br> ${data.content} <br> <img id= "hi" style="width:300px; height:300;" src="${data.attachments[0]}"> <br>`
+}
+}
+chat.innerHTML = `${msgs}`
+
+})
+}
+}
+
+function getuser(id){
+/*
+width:25%;
+  height:400px;
+  position:fixed;
+  background-color: #1C1B1B;
+  border-radius:10px;
+  z-index:200;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom:0;
+  margin: auto;
+  transition: .5s ease;
+*/
+
+var profileBox = `width:25%;
+  height:400px;
+  position:fixed;
+  background-color: #1C1B1B;
+  border-radius:10px;
+  z-index:200;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom:0;
+  margin: auto;
+  transition: .5s ease;`
+
+var profile = document.getElementById("profile"); 
+
+  fetch(('/api/v1/users/' + id) , {method: 'GET', headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+  let json = await res.json();
+if(json.errors && json.errors.length > 0 && json.errors.includes("authorization")){
+localStorage.clear()
+loginHTML()
+}else{
+profile.innerHTML = `<div id="user-profile" style="${profileBox}"> tt </div>`
+swal(json.username, `ID: ${json.id}\nVideos see length: ${json.videos.length}`, 'info')
+}
+  })
+}
+function loginHTML(){
+let html = document.querySelector("HTML");
+html.innerHTML = `
+
+    <link rel="stylesheet" type="text/css" href="/style.css">
+<div class="view" id="loading"></div>
+    <div class="head-div field">
+    <br><br>
+      <input id="email" type="textarea" class="input-form" placeholder="" name="Email" required>
+      <label for="name" class="label-form">Type Your Email</label>
+      <br><br>
+    <div class="head-div field">
+      <br>
+            <i class="far fa-eye" id="test3"></i>
+      <input id="password" type="password" maxlength="15" class="input-form" placeholder="" name="Password" required>
+      <label for="name" class="label-form">Type Your Paasword</label>
+   </div>  
+      <br>
+
+      <br><br>
+      <button class="button button1" id="login" onclick="login()">    
+        Login
+    </button>        <br><br>
+      <button class="button button2" id="login" onclick="registerHTML()">    
+        You Don't have Account?
+    </button>
+
+`
+}
+function registerHTML(){
+let html = document.querySelector("HTML");
+html.innerHTML = `
+
+    <link rel="stylesheet" type="text/css" href="/style.css">
+<div class="view" id="loading"></div>
+    <div class="head-div field">
+    <br><br>
+      <input id="email" type="textarea" class="input-form" placeholder="" name="Email" required>
+      <label for="name" class="label-form">Type Your Email</label>
+      <br><br>
+    <div class="head-div field">
+      <br><br>
+      <input id="username" type="textarea" class="input-form" placeholder="" name="Username" required>
+      <label for="name" class="label-form">Type Your Username</label>
+      <br><br>
+    <div class="head-div field">
+      <br><br>
+            <i class="far fa-eye" id="test3"></i>
+      <input id="password" type="password" maxlength="15" class="input-form" placeholder="" name="Password" required>
+      <label for="name" class="label-form">Type Your Paasword</label>
+      <br><br>
+   </div>  
+      <br>
+
+      <br><br>
+      <button class="button button1" id="register" onclick="register()">    
+        Register
+    </button>        <br><br>
+      <button class="button button2" id="login" onclick="loginHTML()">    
+        Already Have Account?
+    </button>
+
+`
+}
+function register(){
+      var username = document.getElementById("username").value;
+
+      var email = document.getElementById("email").value;
+      var password = document.getElementById("password").value;
+
+if(!email || !password || !username) return;
+var error = ``
+var able = true
+fetch(('/api/v1/register') , {method: 'POST',body: JSON.stringify({"username": username, "email": email, "password": password}), headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+  let json = await res.json();
+if(json.errors.includes('authorization')) return alert(json.message)
+if(json.token) localStorage.setItem('token', json.token);
+if(!json.token) return alert(json.message)
+if(json.token) home()
+
+})
+}
+
+
+
+
+function login(){
+
+      var email = document.getElementById("email").value;
+      var password = document.getElementById("password").value;
+
+if(!email || !password) return;
+var error = ``
+var able = true
+fetch(('/api/v1/login') , {method: 'POST',body: JSON.stringify({"email": email, "password": password}), headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+  let json = await res.json();
+if(json.errors.includes('authorization')) return alert(json.message)
+if(json.data && json.data.token) localStorage.setItem('token', json.data.token);
+if(!json.data || !json.data.token) return alert(json.message)
+if(json.data && json.data.token) home()
+if(json.data && json.data.token) chat()
+})
+}
+
+</script>
+
+</html>

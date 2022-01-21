@@ -1,0 +1,433 @@
+
+<html>
+  
+  <head>
+  <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+    <meta charset="utf-8" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <link rel="stylesheet" type="text/css" href="/style.css">
+  <body>
+      <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid container">
+          <a class="navbar-brand" onclick="setting()">
+
+            <div id="avatar_username">
+            </div>
+          </a>
+          <div class="d-md-flex d-block flex-row">
+            <ul class="navbar-nav">
+<div id="gg">
+
+              </div>
+              <div id="success-login">
+
+              </div>
+              <div id="loadings" >
+      </div>
+              <div id="upload">
+              </div>
+
+
+            </ul>
+          </div>
+        </div>
+      </nav>
+  </body>
+
+<div class="view" id="loading"></div>
+  </head>
+<div id="username">
+</div>
+<div id="plays" style="text-align:center"> 
+
+<div> 
+
+<script>
+var upload = document.getElementById("upload");
+
+let play = document.getElementById("plays")
+
+var myVideo = document.getElementById("video"); 
+setInterval(() => {
+
+ myVideo = document.getElementById("video"); 
+}, 20)
+
+function playPause() { 
+  if (myVideo.paused) 
+    myVideo.play(); 
+  else 
+    myVideo.pause(); 
+} 
+
+function makeBig() { 
+    myVideo.width = 560; 
+} 
+
+function makeSmall() { 
+    myVideo.width = 320; 
+} 
+
+function makeNormal() { 
+    myVideo.width = 420; 
+} 
+function nextvideo(){
+upload.innerHTML = ``
+var ables = true
+var errors = ``
+fetch(('/api/v1/videos') , {method: 'GET', headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+ables = false
+errors = err
+}).then(async res =>{
+if(!ables) return swal("Error", "Internet connection failed\n" + error, "error")
+let json = await res.json()
+if(!json.errors || json.errors.length < 1){
+play.innerHTML = `
+   <button class="button4siz" onclick="playPause()">Play/Pause</button> 
+  <button class= "button3siz" onclick="makeBig()">Big</button>
+  <button class= "button2siz" onclick="makeSmall()">Small</button>
+  <button class= "button1siz" onclick="makeNormal()">Normal</button>
+  <br><br>
+  <video id="video" width="420">
+    <source src="${json.data.video.url}" type="video/mp4">
+    Your browser does not support HTML video.
+  </video>`
+}else{
+if(json.errors.includes("authorization")){
+localStorage.clear()
+loginHTML()
+}else{
+return alert(json.message)
+}}
+})
+}
+var myVideo = document.getElementById("video"); 
+function playPause() { 
+  if (myVideo.paused) 
+    myVideo.play(); 
+  else 
+    myVideo.pause(); 
+} 
+
+function makeBig() { 
+    myVideo.width = 560; 
+} 
+
+function makeSmall() { 
+    myVideo.width = 320; 
+} 
+
+function makeNormal() { 
+    myVideo.width = 420; 
+} 
+var loading1 = document.getElementById("loadings"); 
+
+function addvideo(){
+
+const toBase64 = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+});
+upload.innerHTML = `<br><br> <input id="upload1"> <br><br>`
+var settingsPhotoInput = document.getElementById("upload1");
+settingsPhotoInput.type = "file"
+settingsPhotoInput.id = "profile_avatar"
+settingsPhotoInput.setAttribute("accept" , ".mp4")
+settingsPhotoInput.addEventListener("change", async function(event) {
+var files = settingsPhotoInput.files;
+if(!files[0]) return;
+let file = files[0]
+if(!file) return;
+console.log('u')
+let image_base64 = await toBase64(file)
+console.log('uu')
+if(!image_base64) return;
+console.log('uuu')
+
+var err1 = ``
+var ables1 = true
+let filename = image_base64.split(";")[0].replace('data:image/', '').replace('data:video/', '').replace('data:gif/', '')
+if(filename !== "mp4") return alert('only mp4 is supported')
+loading1.innerHTML = `
+<div class="loader"> </div>`
+upload.innerHTML = ``
+fetch(("/api/v1/attachments") , {method: 'POST', body: JSON.stringify({file: image_base64}), headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+err1 = err
+ables1 = false
+}).then(async res =>{
+loading1.innerHTML = ``
+upload.innerHTML = `<br><br> <input id="upload1"> <br><br>`
+
+if(!ables1) return swal("Error", "Internet connection failed\n" + err1, "error")
+let json = await res.json()
+if(json.errors && json.errors.length > 0 && json.errors.includes("authorization")){
+localStorage.clear()
+loginHTML()
+}
+
+if(json.errors.length < 1){
+alert('Done Upload!')
+}else{
+alert(json.message)
+}
+
+})
+
+})
+
+}
+
+
+                                    
+                                    
+                                    
+/*
+const toBase64 = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = error => reject(error);
+});
+var settingsPhotoInput = document.getElementById("inputs");
+settingsPhotoInput.type = "file"
+settingsPhotoInput.id = "profile_avatar"
+settingsPhotoInput.setAttribute("accept" , ".jpg, .jpeg, .png, .gif, .webp, .mp4")
+settingsPhotoInput.addEventListener("change", async function(event) {
+
+var files = settingsPhotoInput.files;
+if(!files[0]) return;
+let file = files[0]
+if(!file) return;
+let image_base64 = await toBase64(file)
+if(!image_base64) return;
+let data = {
+avatar: image_base64,
+username: "Hi all"
+}
+fetch(("/api/v1/attachments") , {method: 'POST', body: JSON.stringify(data), headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+
+})
+
+}
+})
+*/
+
+var captcha_key = ""
+let loading = document.getElementById("loading")
+loading.innerHTML = `Welcome..`
+var userData = {}
+var able = true
+var me = ``
+var error = ``
+var aaa = document.getElementById("avatar_username");
+var success = document.getElementById("success-login");
+
+fetch(('/api/v1/users/@me') , {method: 'GET', headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+  let json = await res.json();
+if(json.errors && json.errors.length > 0 && json.errors.includes("authorization")){
+localStorage.clear()
+loginHTML()
+}
+userData = json
+
+                            
+})
+
+setTimeout((c)=>{  
+loading.innerHTML = ``
+setTimeout((c)=>{  
+loading.innerHTML = `verison v1.0`
+}, 300)
+setTimeout((c)=>{  
+loading.innerHTML = `Author: Yousuf`
+}, 1200)
+setTimeout(async (c)=>{
+console.log(userData.token)  
+
+if(!userData.token) {
+loginHTML()
+var capt = document.querySelector("#hcaptcha")
+
+capt.removeAttribute("hidden")
+
+}else{
+loading.innerHTML = ``
+if(userData.verified === false) success.innerHTML = `
+<img src="${userData.avatar}" alt="" width="50" height="50" class="rounded-circle"> &nbsp; 
+                              <span class="user">${userData.username}</span> 
+<li class="nav-item">
+                <a class="nav-link" onclick="addvideo()">Add Video</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" onclick="nextvideo()">Next Video</a>
+              </li>`
+if(userData.verified === true) success.innerHTML = `
+<img src="${userData.avatar}" alt="" width="50" height="50" class="rounded-circle"> &nbsp; 
+                              <span class="user">${userData.username}</span> <img src="https://tiktok-developer.glitch.me/api/v1/attachment/verified-icon.png" alt="" width="50" height="50" class="rounded-circle"> &nbsp;
+<li class="nav-item">
+                <a class="nav-link" onclick="addvideo()">Add Video</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" onclick="nextvideo()">Next Video</a>
+              </li>`
+}
+}, 1500)
+}, 1200)
+function home(){
+
+let loading = document.getElementById("loading")
+var aaa = document.getElementById("avatar_username");
+var success = document.getElementById("success-login");
+setTimeout((c)=>{  
+loading.innerHTML = ``
+setTimeout((c)=>{  
+loading.innerHTML = `verison v1.0`
+}, 300)
+setTimeout((c)=>{  
+loading.innerHTML = `Author: Yousuf`
+}, 1200)
+setTimeout(async (c)=>{
+console.log(userData.token)  
+
+if(!userData.token) {
+loginHTML()
+}else{
+loading.innerHTML = ``
+              success.innerHTML = `
+<img src="${userData.avatar}" alt="" width="50" height="50" class="rounded-circle"> &nbsp; 
+                              <span class="user">${userData.username}</span>
+<li class="nav-item">
+                <a class="nav-link" onclick="addvideo()">Add Video</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" onclick="nextvideo()">Next Video</a>
+              </li>`
+}
+}, 1500)
+}, 1200)
+
+}
+function loginHTML(){
+let html = document.querySelector("HTML");
+html.innerHTML = `
+
+    <link rel="stylesheet" type="text/css" href="/style.css">
+<div class="view" id="loading"></div>
+    <div class="head-div field">
+    <br><br>
+      <input id="email" type="textarea" class="input-form" placeholder="" name="Email" required>
+      <label for="name" class="label-form">Type Your Email</label>
+      <br><br>
+    <div class="head-div field">
+      <br>
+            <i class="far fa-eye" id="test3"></i>
+      <input id="password" type="password" maxlength="15" class="input-form" placeholder="" name="Password" required>
+      <label for="name" class="label-form">Type Your Paasword</label>
+   </div>  
+      <br>
+
+      <br><br>
+      <button class="button button1" id="login" onclick="login()">    
+        Login
+    </button>        <br><br>
+      <button class="button button2" id="login" onclick="registerHTML()">    
+        You Don't have Account?
+    </button>
+
+`
+}
+function registerHTML(){
+let html = document.querySelector("HTML");
+html.innerHTML = `
+
+    <link rel="stylesheet" type="text/css" href="/style.css">
+<div class="view" id="loading"></div>
+    <div class="head-div field">
+    <br><br>
+      <input id="email" type="textarea" class="input-form" placeholder="" name="Email" required>
+      <label for="name" class="label-form">Type Your Email</label>
+      <br><br>
+    <div class="head-div field">
+      <br><br>
+      <input id="username" type="textarea" class="input-form" placeholder="" name="Username" required>
+      <label for="name" class="label-form">Type Your Username</label>
+      <br><br>
+    <div class="head-div field">
+      <br><br>
+            <i class="far fa-eye" id="test3"></i>
+      <input id="password" type="password" maxlength="15" class="input-form" placeholder="" name="Password" required>
+      <label for="name" class="label-form">Type Your Paasword</label>
+      <br><br>
+   </div>  
+      <br>
+
+      <br><br>
+      <button class="button button1" id="register" onclick="register()">    
+        Register
+    </button>        <br><br>
+      <button class="button button2" id="login" onclick="loginHTML()">    
+        Already Have Account?
+    </button>
+
+`
+}
+function register(){
+      var username = document.getElementById("username").value;
+
+      var email = document.getElementById("email").value;
+      var password = document.getElementById("password").value;
+
+if(!email || !password || !username) return;
+var error = ``
+var able = true
+fetch(('/api/v1/register') , {method: 'POST',body: JSON.stringify({"username": username, "email": email, "password": password}), headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+  let json = await res.json();
+if(json.errors.includes('authorization')) return alert(json.message)
+if(json.token) localStorage.setItem('token', json.token);
+if(!json.token) return alert(json.message)
+if(json.token) home()
+
+})
+}
+
+
+
+
+function login(){
+
+      var email = document.getElementById("email").value;
+      var password = document.getElementById("password").value;
+
+if(!email || !password) return;
+var error = ``
+var able = true
+fetch(('/api/v1/login') , {method: 'POST',body: JSON.stringify({"email": email, "password": password}), headers: {'authorization': localStorage.getItem('token'),'Content-Type': 'application/json' }, referrerPolicy: "no-referrer"}).catch(err =>{
+able = false
+error = err
+}).then(async res =>{
+if(!able) return swal("Error", "Internet connection failed\n" + error, "error")
+  let json = await res.json();
+if(json.errors.includes('authorization')) return alert(json.message)
+if(json.data && json.data.token) localStorage.setItem('token', json.data.token);
+if(!json.data || !json.data.token) return alert(json.message)
+if(json.data && json.data.token) {
+userData = json.data
+  home()
+}
+})
+}
+</script>
+  </div>
+  </div>
+  </html>
